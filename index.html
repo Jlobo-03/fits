@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fit Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--ink:#1d1d1b;--muted:#77736a;--line:#e6e2d8;--accent:#1f2a44;--accent-ink:#fff;--chip:#ece8de;--lock:#b0892f}
+@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1e1e1c;--ink:#f1efe9;--muted:#9c978c;--line:#2e2d2a;--accent:#e9e4d6;--accent-ink:#141413;--chip:#2a2926;--lock:#d9b45a}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:520px;margin:0 auto;padding:22px 16px 130px}
+h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:30px;margin:0;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:13px;margin:2px 0 16px}
+.seg{display:flex;background:var(--chip);border-radius:12px;padding:3px;margin-bottom:10px}
+.seg button{flex:1;border:0;background:transparent;color:var(--muted);font:500 14px Inter,sans-serif;padding:9px;border-radius:9px;cursor:pointer}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.chip{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;padding:6px 12px;font:500 13px Inter,sans-serif;cursor:pointer}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;padding:10px 8px 10px 14px;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.sw{width:30px;height:30px;border-radius:50%;flex:none;border:1px solid rgba(128,128,128,.25)}
+.sw.none{background:repeating-linear-gradient(45deg,transparent 0 4px,var(--line) 4px 6px)}
+.txt{flex:1;min-width:0}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.nm{font-weight:500}
+.nm.dim{color:var(--muted);font-weight:400}
+.ib{width:38px;height:38px;border-radius:10px;border:0;background:transparent;color:var(--muted);cursor:pointer;display:grid;place-items:center;flex:none}
+.ib:active{background:var(--chip)}
+.ib.locked{color:var(--lock)}
+.ib svg{width:19px;height:19px}
+.spacer{width:38px;flex:none}
+.note{font-size:13px;color:var(--muted);padding:10px 14px;border-top:1px solid var(--line)}
+.bar{position:fixed;left:0;right:0;bottom:0;padding:16px 16px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(to bottom,transparent,var(--bg) 35%)}
+.bar .in{max-width:520px;margin:0 auto;display:flex;gap:8px}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;padding:14px 16px;font:600 15px Inter,sans-serif;cursor:pointer}
+.btn:disabled{opacity:.4}
+.btn.primary{flex:1;background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+h2{font-family:Fraunces,Georgia,serif;font-size:19px;font-weight:600;margin:28px 0 4px}
+.hint{color:var(--muted);font-size:13px;margin:0 0 10px}
+.grp{margin:12px 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.items{display:flex;flex-wrap:wrap;gap:6px}
+.it{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 10px 5px 6px;font:13px Inter,sans-serif;cursor:pointer}
+.it .dot{width:14px;height:14px;border-radius:50%;border:1px solid rgba(128,128,128,.3)}
+.it.out{opacity:.45;text-decoration:line-through}
+.hist{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 14px}
+.h{padding:10px 0;border-top:1px solid var(--line);font-size:13px}
+.h:first-child{border-top:0}
+.h b{font-weight:600}
+.h span{color:var(--muted)}
+.link{background:none;border:0;color:var(--muted);text-decoration:underline;font:13px Inter,sans-serif;cursor:pointer;padding:6px 0}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.around-btn{width:100%;border:1px dashed var(--muted);background:transparent;color:var(--ink);border-radius:14px;padding:11px;font:500 14px Inter,sans-serif;cursor:pointer;margin-bottom:12px}
+.around{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px 14px;margin-bottom:12px}
+.around .grp:first-of-type{margin-top:4px}
+.foot{color:var(--muted);font-size:12px;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Fit Generator</h1>
+  <div class="sub" id="date"></div>
+
+  <div class="seg" id="modeSeg">
+    <button data-mode="bc">Business casual</button>
+    <button data-mode="suit">Suit day</button>
+  </div>
+  <div class="chips" id="chips"></div>
+
+  <button class="around-btn" id="aroundBtn">Build around a piece…</button>
+  <div class="around" id="around" hidden>
+    <p class="hint">Pick the piece you want to wear. It gets locked, and the rest of the fit is built around it.</p>
+    <div id="aroundList"></div>
+  </div>
+
+  <div class="card" id="fit"></div>
+
+  <h2>Recently worn</h2>
+  <p class="hint">Tap “Wearing this” and those pieces get picked less for the next 3 days.</p>
+  <div id="hist"></div>
+
+  <h2>Wardrobe</h2>
+  <p class="hint">Tap anything that's in the wash or at the cleaner to skip it. Tap it again to bring it back.</p>
+  <div id="wardrobe"></div>
+
+  <div class="foot">Wardrobe and matching rules live in the page's code. Ask Claude to add, remove or change anything.</div>
+</div>
+
+<div class="bar"><div class="in">
+  <button class="btn" id="backBtn" title="Previous fit">←</button>
+  <button class="btn primary" id="newBtn">New fit</button>
+  <button class="btn" id="woreBtn">Wearing this</button>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   WARDROBE CONFIG: edit items here.
+   w = how often it gets picked (1 = normal, 2 = twice as often)
+   separate: true = a suit piece worn as a separate (turned on/off by the "Suit separates" chip)
+   ===================================================================== */
+const COLORS = {
+  white:'#f7f6f2', cream:'#efe5cf', lavender:'#c7b6e0', cottoncandy:'#a9d8f5', powderblue:'#b3cde3', skyblue:'#8cc4ea',
+  pink:'#f1b5c4', maroon:'#6a1e2a', grey:'#9b9b9b', greybrown:'#8a8274', black:'#1b1b1b', navy:'#1f2a44',
+  green:'#2f4b38', brown:'#6b4a32', khaki:'#c2ae8c', beige:'#d8c6a4',
+  burgundy:'#7a1f2e', silver:'#c4c7cc', charcoal:'#4a4a4a', gold:'#c9a13b', red:'#b3262e', orange:'#d9762b',
+  purple:'#5c3d7a', lightblue:'#9cc7e8', forest:'#2c4a33', olive:'#6b6b3a', steel:'#b9bec4'
+};
+
+const WARDROBE = {
+  shirts: [
+    {id:'sh-white',  name:'White dress shirt',              color:'white',       w:2.5},
+    {id:'sh-powder', name:'Powder blue dress shirt',        color:'powderblue',  w:2},
+    {id:'sh-lav',    name:'Lavender dress shirt',           color:'lavender',    w:1.5},
+    {id:'sh-pink',   name:'Pink dress shirt',               color:'pink',        w:1.5},
+    {id:'sh-cotton', name:'Cotton candy blue dress shirt',  color:'cottoncandy', w:1},
+    {id:'sh-maroon', name:'Maroon dress shirt',             color:'maroon',      w:1},
+    {id:'sh-grey',   name:'Grey dress shirt',               color:'grey',        w:1},
+    {id:'sh-cream',  name:'Cream dress shirt',              color:'cream',       w:1},
+    {id:'sh-black',  name:'Black dress shirt',              color:'black',       w:1}
+  ],
+  // worn directly over the shirt
+  knits: [
+    {id:'kn-rl-green', name:'Green Ralph Lauren cable knit',  color:'green',    kind:'sweater'},
+    {id:'kn-rl-navy',  name:'Navy Ralph Lauren cable knit',   color:'navy',     kind:'sweater'},
+    {id:'kn-rl-black', name:'Black Ralph Lauren cable knit',  color:'black',    kind:'sweater'},
+    {id:'kn-cash-brn', name:'Brown cashmere sweater',         color:'brown',    kind:'sweater'},
+    {id:'qz-barbour',  name:'Grey Barbour quarter-zip',       color:'grey',     kind:'qz'},
+    {id:'qz-sky',      name:'Sky blue cashmere quarter-zip',  color:'skyblue',  kind:'qz'},
+    {id:'qz-rl-white', name:'White Ralph Lauren quarter-zip', color:'white',    kind:'qz'}
+  ],
+  // vests and blazers: over the shirt or over a knit
+  layers: [
+    {id:'gv-barb-navy',  name:'Navy Barbour Lowerdale gilet',  color:'navy',      kind:'gilet'},
+    {id:'gv-barb-black', name:'Black Barbour Lowerdale gilet', color:'black',     kind:'gilet'},
+    {id:'gv-lulu',       name:'White Lululemon vest',          color:'white',     kind:'gilet'},
+    {id:'gv-brooks',     name:'Grey Brooks Brothers vest',     color:'greybrown', kind:'gilet'},
+    {id:'gv-patagonia',  name:'Grey Patagonia vest',           color:'grey',      kind:'gilet'},
+    {id:'wc-alfani',     name:'Beige Alfani vest',             color:'beige',     kind:'waistcoat'},
+    {id:'bz-navy',  name:'Navy suit jacket (as a blazer)',  color:'navy',  kind:'blazer', separate:true, pants:{khaki:1, grey:1, beige:.9, brown:.6}},
+    {id:'bz-grey',  name:'Grey suit jacket (as a blazer)',  color:'grey',  kind:'blazer', separate:true, pants:{navy:1, black:.8, khaki:.7, brown:.6, beige:.4}},
+    {id:'bz-beige', name:'Beige suit jacket (as a blazer)', color:'beige', kind:'blazer', separate:true, pants:{navy:1, brown:.7, black:.5, grey:.5}}
+  ],
+  pants: [
+    {id:'pt-navy',  name:'Navy dress pants',    color:'navy',  w:1.4},
+    {id:'pt-black', name:'Black dress pants',   color:'black'},
+    {id:'pt-brown', name:'Brown dress pants',   color:'brown'},
+    {id:'pt-khaki', name:'Khaki pants',         color:'khaki'},
+    {id:'pt-grey',  name:'Grey suit trousers',  color:'grey',  separate:true},
+    {id:'pt-beige', name:'Beige suit trousers', color:'beige', separate:true, w:.7}
+  ],
+  suits: [
+    {id:'su-navy',  name:'Navy suit',  color:'navy',  w:1.6},
+    {id:'su-grey',  name:'Grey suit',  color:'grey'},
+    {id:'su-beige', name:'Beige suit', color:'beige'},
+    {id:'su-black', name:'Black suit', color:'black', w:.6}
+  ],
+  shoes: [
+    {id:'sho-brown', name:'Brown leather dress shoes', color:'brown'},
+    {id:'sho-black', name:'Black leather dress shoes', color:'black'}
+  ],
+  watches: [
+    {id:'wa-tudor',  name:'Tudor Black Bay 58',          color:'steel', strap:'steel', w:1.2},
+    {id:'wa-fossil', name:'Fossil (brown leather strap)', color:'brown', strap:'brown'}
+  ],
+  outer: [
+    {id:'ou-barbour', name:'Navy Barbour quilted jacket', color:'navy',  kind:'jacket'},
+    {id:'ou-grey',    name:'Grey overcoat',               color:'grey',  kind:'overcoat'},
+    {id:'ou-black',   name:'Black overcoat',              color:'black', kind:'overcoat'},
+    {id:'ou-trench',  name:'Beige trench coat',           color:'beige', kind:'trench'}
+  ],
+  ties: [
+    {id:'ti-navy',name:'Navy tie',color:'navy',w:1.3},{id:'ti-burg',name:'Burgundy tie',color:'burgundy',w:1.3},
+    {id:'ti-forest',name:'Forest green tie',color:'forest'},{id:'ti-brown',name:'Brown tie',color:'brown',w:.8},
+    {id:'ti-char',name:'Charcoal tie',color:'charcoal',w:.9},{id:'ti-black',name:'Black tie',color:'black',w:.6},
+    {id:'ti-silver',name:'Silver tie',color:'silver',w:.8},{id:'ti-gold',name:'Gold tie',color:'gold',w:.5},
+    {id:'ti-pink',name:'Pink tie',color:'pink',w:.8},{id:'ti-purple',name:'Purple tie',color:'purple',w:.7},
+    {id:'ti-lblue',name:'Light blue tie',color:'lightblue',w:.8},{id:'ti-red',name:'Red tie',color:'red',w:.6},
+    {id:'ti-orange',name:'Orange tie',color:'orange',w:.4},{id:'ti-olive',name:'Olive tie',color:'olive',w:.5}
+  ]
+};
+
+/* =====================================================================
+   MATCHING RULES: 1 = great, 0.5 = so-so, 0 = never.
+   PAIR applies to any two pieces that sit next to each other (either order).
+   ===================================================================== */
+const PAIR_RAW = {
+  'black|brown':.15, 'maroon|green':0, 'maroon|brown':.5, 'black|navy':.5, 'cream|khaki':.3, 'cream|beige':.3,
+  'beige|khaki':.2, 'white|cream':.3, 'skyblue|powderblue':.2, 'skyblue|cottoncandy':.15, 'cottoncandy|powderblue':.3,
+  'skyblue|lavender':.5, 'pink|green':.6, 'pink|black':.6, 'lavender|brown':.45, 'lavender|green':.5,
+  'grey|greybrown':.35, 'maroon|black':.8, 'cottoncandy|brown':.5, 'powderblue|brown':.8, 'pink|brown':.6,
+  'green|black':.6, 'maroon|pink':.2, 'maroon|lavender':.4, 'skyblue|black':.6, 'brown|beige':.8
+};
+const SHOE_PANT = {navy:{brown:1,black:.75}, black:{brown:0,black:1}, brown:{brown:1,black:0},
+                   khaki:{brown:1,black:.25}, grey:{brown:.9,black:1}, beige:{brown:1,black:.2}};
+const SHOE_SUIT = {navy:{brown:1,black:1}, grey:{brown:.85,black:1}, beige:{brown:1,black:.1}, black:{brown:0,black:1}};
+const SUIT_SHIRT = {white:1, powderblue:1, lavender:.8, pink:.8, cottoncandy:.8, cream:.5, grey:.35, black:.25, maroon:.2};
+const TIE_FAMILY = {navy:'navy',burgundy:'maroon',forest:'green',brown:'brown',charcoal:'grey',black:'black',silver:'grey',
+                    gold:'beige',pink:'pink',purple:'lavender',lightblue:'powderblue',red:'red',orange:'orange',olive:'green'};
+const LIGHT_SOCK_PANTS = ['khaki','beige'];
+
+/* ===================================================================== */
+const PAIR = {};
+for (const k in PAIR_RAW){ const [a,b]=k.split('|'); PAIR[[a,b].sort().join('|')] = PAIR_RAW[k]; }
+function pair(a,b,same){ if(!a||!b) return 1; if(a===b) return same; const k=[a,b].sort().join('|'); return k in PAIR ? PAIR[k] : 1; }
+const sameLayerPant = c => c==='navy' ? .45 : c==='black' ? .5 : .3;
+const NONE_KNIT  = {id:'none-knit',  name:'No knit today',          none:true, w:1.8};
+const NONE_LAYER = {id:'none-layer', name:'No vest or blazer today', none:true, w:4};
+const real = x => (x && !x.none) ? x : null;
+const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
+
+function tieShirt(t, S){
+  if (TIE_FAMILY[t.color]===S.color) return 0;
+  if (t.color==='lightblue' && ['cottoncandy','skyblue','powderblue'].includes(S.color)) return 0;
+  if (S.color==='black' || S.color==='maroon'){
+    const m = {silver:1, charcoal:.8, pink:.5, burgundy:S.color==='black'?.7:0};
+    return t.color in m ? m[t.color] : .2;
+  }
+  return 1;
+}
+function tieSuit(t, c){
+  if (c==='black'){ const m={black:1,silver:1,burgundy:1,navy:.8,charcoal:.9}; return t.color in m ? m[t.color] : .15; }
+  if (c==='navy')  return t.color==='navy' ? .35 : t.color==='black' ? .5 : 1;
+  if (c==='beige') return t.color==='black' ? .2 : t.color==='charcoal' ? .6 : 1;
+  if (c==='grey')  return t.color==='charcoal' ? .4 : t.color==='silver' ? .6 : 1;
+  return 1;
+}
+
+/* ---------------- state ---------------- */
+const KEY='fitgen.v1';
+let st = {mode:'bc', outer:false, tie:false, separates:true, out:[], hist:[]};
+try { const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s) st=Object.assign(st,s); } catch(e){}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(st)); }catch(e){} }
+
+let fit=null, locks={}, prev=[];
+
+function slots(){
+  if (st.mode==='suit') return ['suit','shirt','tie','shoes','watch'].concat(st.outer?['outer']:[]);
+  return ['shirt','knit','layer','pants','shoes','watch'].concat(st.tie?['tie']:[]).concat(st.outer?['outer']:[]);
+}
+const SOURCE = {shirt:'shirts',knit:'knits',layer:'layers',pants:'pants',suit:'suits',shoes:'shoes',watch:'watches',outer:'outer',tie:'ties'};
+
+function recentIds(){
+  const cut = Date.now() - 3*864e5, s=new Set();
+  st.hist.forEach(h=>{ if(new Date(h.date).getTime()>=cut) Object.values(h.ids).forEach(id=>s.add(id)); });
+  return s;
+}
+function pool(slot){
+  let items = WARDROBE[SOURCE[slot]].slice();
+  if (!st.separates) items = items.filter(i=>!i.separate);
+  let avail = items.filter(i=>!st.out.includes(i.id));
+  if (!avail.length) avail = items;
+  if (slot==='knit')  avail.push(NONE_KNIT);
+  if (slot==='layer') avail.push(NONE_LAYER);
+  return avail;
+}
+function weightOf(slot, it, recent){
+  let w = it.w ?? 1;
+  if (recent.has(it.id) && ['shirt','knit','layer','pants','suit'].includes(slot)) w *= .3;
+  if (st.mode==='suit' && slot==='shirt') w *= (SUIT_SHIRT[it.color] ?? 1);
+  return w;
+}
+function pick(arr, slot, recent){
+  const ws = arr.map(i=>weightOf(slot,i,recent)); const tot = ws.reduce((a,b)=>a+b,0);
+  let r = Math.random()*tot; for (let i=0;i<arr.length;i++){ r-=ws[i]; if(r<=0) return arr[i]; } return arr[arr.length-1];
+}
+
+function score(f){
+  let s=1; const Sh=f.shoes, S=f.shirt;
+  if (st.mode==='bc'){
+    const K=real(f.knit), L=real(f.layer), P=f.pants;
+    s *= pair(S.color,P.color,.15);
+    if (K) s *= pair(K.color,S.color,0) * pair(K.color,P.color,sameLayerPant(K.color));
+    if (L){
+      if (L.kind==='blazer'){
+        s *= (L.pants[P.color] ?? 0) * pair(L.color,S.color,0);
+        if (K) s *= (K.kind==='sweater' ? .6 : .25) * pair(L.color,K.color,0);
+        if (L.color==='beige' && Sh.color==='black') s *= .2;
+      } else {
+        s *= pair(L.color,P.color,sameLayerPant(L.color));
+        if (K) s *= (L.kind==='waistcoat' ? 0 : .85*pair(L.color,K.color,0));
+        else s *= pair(L.color,S.color,0);
+      }
+    }
+    s *= SHOE_PANT[P.color][Sh.color];
+    if (f.tie){
+      s *= tieShirt(f.tie,S) * (K && K.kind==='qz' ? .4 : 1);
+      if (L && L.kind==='blazer') s *= tieSuit(f.tie,L.color);
+    }
+  } else {
+    const U=f.suit;
+    s *= pair(S.color,U.color,.1) * SHOE_SUIT[U.color][Sh.color] * tieShirt(f.tie,S) * tieSuit(f.tie,U.color);
+  }
+  if (f.watch.strap==='brown' && Sh.color!=='brown') s=0;
+  if (f.outer){
+    const O=f.outer, L=real(f.layer);
+    const under = st.mode==='suit' ? f.suit : (L || real(f.knit) || S);
+    s *= pair(O.color,under.color,.6);
+    if (O.color==='black' && Sh.color==='brown') s *= .5;
+    if (O.kind==='trench' && Sh.color==='black') s *= .75;
+    if (st.mode==='suit' && O.kind==='jacket') s *= .35;
+    if (L){
+      if (L.kind==='blazer' && O.kind==='jacket') s *= .3;
+      if (L.kind!=='blazer') s *= (O.kind==='jacket' ? .3 : .45);
+    }
+  }
+  return s;
+}
+
+function generate(base, lockSet, avoidSlot){
+  const recent=recentIds(), sl=slots(); let best=null, bestS=-1;
+  for (let i=0;i<4000;i++){
+    const c={};
+    for (const slot of sl){
+      if (base && base[slot] && lockSet[slot]) { c[slot]=base[slot]; continue; }
+      let p=pool(slot);
+      if (slot===avoidSlot && base && base[slot] && p.length>1) p=p.filter(x=>x.id!==base[slot].id);
+      c[slot]=pick(p,slot,recent);
+    }
+    const s=score(c);
+    if (s>bestS){best=c;bestS=s;}
+    if (s>0 && Math.random()<s*s) { c._s=s; return c; }
+  }
+  best._s=bestS; return best;
+}
+
+/* ---------------- actions ---------------- */
+function newFit(){ if(fit) prev.push(fit); if(prev.length>25) prev.shift(); fit=generate(fit,locks); render(); }
+function rerollSlot(slot){
+  if(fit) prev.push(fit);
+  const ls={}; slots().forEach(s=>ls[s]=s!==slot); fit=generate(fit,ls,slot); render();
+}
+function fillSlotsQuietly(){ const ls={}; slots().forEach(s=>ls[s]=!!(fit&&fit[s])); fit=generate(fit,ls); }
+
+/* ---------------- render ---------------- */
+const ICON_LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+const ICON_UNLOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>';
+const ICON_ROLL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>';
+
+function derived(){
+  const pc = st.mode==='suit' ? fit.suit.color : fit.pants.color;
+  const light = LIGHT_SOCK_PANTS.includes(pc);
+  return {
+    belt:{name:cap(fit.shoes.color)+' leather belt', color:fit.shoes.color},
+    socks:{name:(light?'Light':'Dark')+' socks', color: light ? 'beige' : 'navy'}
+  };
+}
+function rowsDef(){
+  return st.mode==='suit'
+    ? [['outer','Outerwear'],['suit','Suit'],['shirt','Shirt'],['tie','Tie'],['belt','Belt'],['shoes','Shoes'],['socks','Socks'],['watch','Watch']]
+    : [['outer','Outerwear'],['layer','Vest / blazer'],['knit','Knit / quarter-zip'],['shirt','Shirt'],['tie','Tie'],['pants','Pants'],['belt','Belt'],['shoes','Shoes'],['socks','Socks'],['watch','Watch']];
+}
+function render(){
+  document.querySelectorAll('#modeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.mode===st.mode));
+  const chips=[['outer','Outerwear'],...(st.mode==='bc'?[['tie','Tie'],['separates','Suit separates']]:[])];
+  document.getElementById('chips').innerHTML = chips.map(([k,l])=>`<button class="chip ${st[k]?'on':''}" data-chip="${k}">${l}</button>`).join('');
+
+  const d=derived(), sl=slots();
+  let html='';
+  for (const [slot,label] of rowsDef()){
+    const isDer = slot==='belt'||slot==='socks';
+    if (!isDer && !sl.includes(slot)) continue;
+    const it = isDer ? d[slot] : fit[slot];
+    const none = it.none;
+    html += `<div class="row">
+      <div class="sw ${none?'none':''}" style="${none?'':'background:'+COLORS[it.color]}"></div>
+      <div class="txt"><div class="lbl">${label}</div><div class="nm ${none?'dim':''}">${it.name}</div></div>
+      ${isDer ? '<div class="spacer"></div><div class="spacer"></div>' :
+        `<button class="ib ${locks[slot]?'locked':''}" data-lock="${slot}" aria-label="Lock">${locks[slot]?ICON_LOCK:ICON_UNLOCK}</button>
+         <button class="ib" data-roll="${slot}" aria-label="Swap this piece">${ICON_ROLL}</button>`}
+    </div>`;
+  }
+  const notes=[`Belt matches the shoes · ${d.socks.name.toLowerCase()} to blend with the ${st.mode==='suit'?'suit':'pants'}`];
+  if (fit._s < .35) notes.push('Bolder combo. Reroll if it’s not you today.');
+  html += `<div class="note">${notes.join('<br>')}</div>`;
+  document.getElementById('fit').innerHTML = html;
+  document.getElementById('backBtn').disabled = !prev.length;
+  renderHist(); renderWardrobe();
+}
+function renderHist(){
+  const el=document.getElementById('hist');
+  if (!st.hist.length){ el.innerHTML='<p class="hint">Nothing logged yet.</p>'; return; }
+  el.innerHTML = '<div class="hist">'+st.hist.slice(0,7).map(h=>{
+    const dt=new Date(h.date).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+    return `<div class="h"><b>${dt}</b> <span>· ${h.summary}</span></div>`;
+  }).join('')+'</div><button class="link" id="clearHist">Clear history</button>';
+  document.getElementById('clearHist').onclick=()=>{ st.hist=[]; save(); render(); };
+}
+function renderWardrobe(){
+  const groups=[['Shirts','shirts'],['Knits & quarter-zips','knits'],['Vests & blazers','layers'],['Pants','pants'],['Suits','suits'],['Outerwear','outer']];
+  document.getElementById('wardrobe').innerHTML = groups.map(([t,k])=>
+    `<div class="grp">${t}</div><div class="items">`+
+    WARDROBE[k].map(i=>`<button class="it ${st.out.includes(i.id)?'out':''}" data-out="${i.id}"><span class="dot" style="background:${COLORS[i.color]}"></span>${i.name.replace(' (as a blazer)','')}</button>`).join('')+
+    '</div>').join('');
+}
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),2200); }
+
+/* ---------------- events ---------------- */
+document.getElementById('modeSeg').onclick=e=>{
+  const m=e.target.dataset.mode; if(!m||m===st.mode) return;
+  st.mode=m; save(); locks={}; prev=[]; fit=null; fit=generate(null,{}); render();
+};
+document.getElementById('chips').onclick=e=>{
+  const k=e.target.dataset.chip; if(!k) return;
+  st[k]=!st[k]; save();
+  if (k==='separates' && !st.separates){ ['layer','pants'].forEach(s=>{ if(fit[s]&&fit[s].separate){ delete fit[s]; locks[s]=false; } }); }
+  if (!st[k] && (k==='outer'||k==='tie')) { delete fit[k]; locks[k]=false; }
+  fillSlotsQuietly(); render();
+};
+document.getElementById('fit').onclick=e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  if (b.dataset.lock){ locks[b.dataset.lock]=!locks[b.dataset.lock]; render(); }
+  if (b.dataset.roll){ rerollSlot(b.dataset.roll); }
+};
+document.getElementById('wardrobe').onclick=e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  const id=b.dataset.out; st.out = st.out.includes(id) ? st.out.filter(x=>x!==id) : st.out.concat(id); save();
+  const sl=slots(); if (sl.some(s=>fit[s]&&fit[s].id===id) && st.out.includes(id)){ sl.forEach(s=>{ if(fit[s]&&fit[s].id===id){ delete fit[s]; locks[s]=false; } }); fillSlotsQuietly(); }
+  render();
+};
+/* ---------------- build around a piece ---------------- */
+const CAT_SLOT = {outer:'outer',layers:'layer',knits:'knit',shirts:'shirt',pants:'pants',suits:'suit',shoes:'shoes',watches:'watch',ties:'tie'};
+const AROUND_GROUPS = [['Outerwear','outer'],['Vests & blazers','layers'],['Knits & quarter-zips','knits'],['Shirts','shirts'],
+                       ['Pants','pants'],['Suits','suits'],['Shoes','shoes'],['Watches','watches'],['Ties','ties']];
+function renderAround(){
+  document.getElementById('aroundList').innerHTML = AROUND_GROUPS.map(([t,k])=>
+    `<div class="grp">${t}</div><div class="items">`+
+    WARDROBE[k].map(i=>`<button class="it" data-cat="${k}" data-id="${i.id}"><span class="dot" style="background:${COLORS[i.color]}"></span>${i.name.replace(' (as a blazer)','')}</button>`).join('')+
+    '</div>').join('');
+}
+function buildAround(cat,id){
+  const slot=CAT_SLOT[cat], item=WARDROBE[cat].find(i=>i.id===id), oldMode=st.mode;
+  if (slot==='suit') st.mode='suit'; else if (['knit','layer','pants'].includes(slot)) st.mode='bc';
+  if (slot==='outer') st.outer=true;
+  if (slot==='tie' && st.mode==='bc') st.tie=true;
+  if (item.separate) st.separates=true;
+  st.out = st.out.filter(x=>x!==id); save();
+  if (st.mode!==oldMode) prev=[]; else if (fit) prev.push(fit);
+  locks={[slot]:true}; fit=generate({[slot]:item},locks);
+  document.getElementById('around').hidden=true;
+  render(); window.scrollTo({top:0,behavior:'smooth'});
+  toast('Built around it. It stays locked while you hit New fit.');
+}
+document.getElementById('aroundBtn').onclick=()=>{ const p=document.getElementById('around'); p.hidden=!p.hidden; if(!p.hidden) renderAround(); };
+document.getElementById('aroundList').onclick=e=>{ const b=e.target.closest('button'); if(b) buildAround(b.dataset.cat,b.dataset.id); };
+
+document.getElementById('newBtn').onclick=newFit;
+document.getElementById('backBtn').onclick=()=>{ if(!prev.length) return; fit=prev.pop(); render(); };
+document.getElementById('woreBtn').onclick=()=>{
+  const ids={}; slots().forEach(s=>{ if(fit[s] && !fit[s].none) ids[s]=fit[s].id; });
+  const main = st.mode==='suit' ? [fit.suit,fit.shirt,fit.tie] : [real(fit.layer),real(fit.knit),fit.shirt,fit.pants];
+  st.hist.unshift({date:new Date().toISOString(), ids, summary: main.filter(Boolean).map(x=>x.name.replace(' (as a blazer)','')).join(' · ')});
+  st.hist = st.hist.slice(0,30); save(); render();
+  toast('Logged. These pieces get picked less for 3 days.');
+};
+
+document.getElementById('date').textContent = new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+fit = generate(null,{}); render();
+</script>
+</body>
+</html>
