@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>3</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Trivia">
+<style>
+  :root{
+    --bg:#0d1a2b;
+    --bg2:#122439;
+    --panel:#0f2036;
+    --text:#eef2f6;
+    --muted:#8ea3bb;
+    --line:rgba(255,255,255,.08);
+    --accent:#e8a33d;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 700px at 15% -10%, rgba(255,255,255,.05), transparent 60%),
+      radial-gradient(900px 600px at 110% 10%, rgba(255,255,255,.04), transparent 55%),
+      linear-gradient(180deg,var(--bg),var(--bg2));
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .app{
+    width:100%;
+    max-width:820px;
+  }
+  .card{
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)), var(--panel);
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 30px 80px -30px rgba(0,0,0,.6);
+    position:relative;
+  }
+  .filmstrip{
+    height:10px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:0 14px;
+    background:var(--accent);
+    transition:background .35s ease;
+  }
+  .filmstrip span{
+    width:6px;height:6px;border-radius:50%;
+    background:rgba(13,26,43,.55);
+  }
+  .content{ padding:36px 40px 32px; }
+
+  /* ---------- START SCREEN ---------- */
+  .eyebrow{
+    text-transform:uppercase;
+    letter-spacing:.18em;
+    font-size:12px;
+    color:var(--accent);
+    font-weight:700;
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:Georgia,'Times New Roman',serif;
+    font-size:32px;
+    line-height:1.15;
+    margin:0 0 10px;
+  }
+  .sub{ color:var(--muted); font-size:14.5px; line-height:1.5; margin-bottom:26px; max-width:520px;}
+  .field{ margin-bottom:20px; }
+  .field label{ display:block; font-size:12.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:10px; font-weight:600;}
+  .chiprow{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{
+    padding:7px 13px; border-radius:999px; border:1px solid var(--line);
+    background:rgba(255,255,255,.03); color:var(--text); font-size:13px; cursor:pointer;
+    user-select:none; transition:all .15s ease;
+  }
+  .chip.on{ background:var(--accent); color:#12233d; border-color:var(--accent); font-weight:700;}
+  .rowbtns{ display:flex; gap:8px; margin-top:8px;}
+  .smallbtn{
+    padding:5px 10px; border-radius:8px; border:1px solid var(--line); background:transparent;
+    color:var(--muted); font-size:12px; cursor:pointer;
+  }
+  .smallbtn:hover{ color:var(--text); border-color:rgba(255,255,255,.25);}
+  select{
+    background:rgba(255,255,255,.04); border:1px solid var(--line); color:var(--text);
+    padding:10px 12px; border-radius:10px; font-size:14px; width:100%; max-width:260px;
+  }
+  .primary{
+    background:var(--accent); color:#12233d; border:none; font-weight:800;
+    padding:14px 26px; border-radius:12px; font-size:15px; cursor:pointer;
+    box-shadow:0 10px 24px -8px rgba(232,163,61,.5);
+    transition:transform .12s ease;
+  }
+  .primary:hover{ transform:translateY(-1px); }
+  .primary:disabled{ opacity:.4; cursor:not-allowed; transform:none; box-shadow:none;}
+  .ghost{
+    background:transparent; border:1px solid var(--line); color:var(--text);
+    padding:14px 22px; border-radius:12px; font-size:14.5px; cursor:pointer; font-weight:600;
+  }
+  .ghost:hover{ border-color:rgba(255,255,255,.3); }
+
+  /* ---------- QUIZ SCREEN ---------- */
+  .qbar{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:26px;
+  }
+  .catlabel{
+    text-transform:uppercase; letter-spacing:.16em; font-size:12px; font-weight:700; color:var(--accent);
+  }
+  .meta{ display:flex; align-items:center; gap:14px; }
+  .count{ color:var(--muted); font-size:13px; }
+  .timerwrap{ display:flex; align-items:center; gap:8px; }
+  .timernum{
+    font-variant-numeric:tabular-nums; font-weight:800; font-size:14px;
+    width:30px; text-align:right; color:var(--text);
+  }
+  .ring{ position:relative; width:28px; height:28px; }
+  .ring svg{ transform:rotate(-90deg); }
+  .ring circle{ fill:none; stroke-width:3; }
+  .ring .track{ stroke:rgba(255,255,255,.12); }
+  .ring .prog{ stroke:var(--accent); stroke-linecap:round; transition:stroke-dashoffset 1s linear; }
+  .iconbtn{
+    width:34px;height:34px;border-radius:9px; border:1px solid var(--line); background:rgba(255,255,255,.03);
+    color:var(--text); cursor:pointer; display:flex;align-items:center;justify-content:center; font-size:14px;
+  }
+  .iconbtn:hover{ border-color:rgba(255,255,255,.3); }
+
+  .badgewrap{ display:flex; align-items:center; gap:14px; margin-bottom:22px; }
+  .badge{
+    width:40px;height:40px;border-radius:10px; background:var(--accent); color:#12233d;
+    display:flex;align-items:center;justify-content:center; font-weight:900; font-size:17px; font-family:Georgia,serif;
+    flex-shrink:0;
+  }
+  .fadedq{ color:var(--muted); font-size:14px; line-height:1.4; }
+
+  .qtext{
+    font-family:Georgia,'Times New Roman',serif;
+    font-size:29px; line-height:1.32; min-height:120px; display:flex; align-items:center;
+  }
+  .atext{
+    font-family:Georgia,'Times New Roman',serif;
+    font-weight:700; font-size:38px; line-height:1.25; color:var(--accent); min-height:110px;
+    display:flex; align-items:center;
+  }
+  .footer{ display:flex; align-items:center; justify-content:space-between; margin-top:24px; gap:12px; flex-wrap:wrap;}
+  .hint{ color:var(--muted); font-size:12.5px; }
+  .gradebtns{ display:flex; gap:10px; }
+  .gradebtn{
+    padding:11px 20px; border-radius:10px; border:1px solid var(--line); background:rgba(255,255,255,.03);
+    color:var(--text); font-weight:700; font-size:14px; cursor:pointer;
+  }
+  .gradebtn.miss:hover{ border-color:#c15b5b; color:#e08a8a; }
+  .gradebtn.got:hover{ border-color:#4fb286; color:#7ed3ab; }
+
+  .pauseOverlay{
+    position:absolute; inset:0; background:rgba(9,17,29,.88); backdrop-filter:blur(2px);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+    text-align:center;
+  }
+  .pauseOverlay h2{ font-family:Georgia,serif; font-size:26px; margin:0; }
+
+  /* ---------- END SCREEN ---------- */
+  .scoreBig{ font-family:Georgia,serif; font-size:52px; font-weight:800; color:var(--accent); margin:6px 0 4px;}
+  .breakdown{ margin-top:24px; border-top:1px solid var(--line); padding-top:18px; }
+  .brow{ display:flex; justify-content:space-between; padding:8px 0; font-size:13.5px; border-bottom:1px dashed var(--line); }
+  .brow .cn{ color:var(--text); }
+  .brow .cs{ color:var(--muted); font-variant-numeric:tabular-nums; }
+  .actions{ display:flex; gap:10px; margin-top:26px; flex-wrap:wrap; }
+
+  @media (max-width:560px){
+    .content{ padding:26px 20px 24px; }
+    h1{ font-size:26px; }
+    .qtext{ font-size:23px; }
+    .atext{ font-size:30px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="card">
+    <div class="filmstrip" id="filmstrip">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<script>
+/* ===================== QUESTION BANK ===================== */
+const RAW = [
+["World War I","What assassination is considered the immediate catalyst for World War I?","Archduke Franz Ferdinand (Sarajevo, 1914)"],
+["World War I","Who was the U.S. president when America entered WWI?","Woodrow Wilson"],
+["World War I","What year did the U.S. enter WWI?","1917"],
+["World War I","What German policy was a major reason the U.S. entered WWI?","Unrestricted submarine warfare"],
+["World War I","What intercepted German communication proposed an alliance with Mexico against the United States?","The Zimmermann Telegram"],
+["World War I","What were the two major alliances in WWI?","Allies and Central Powers"],
+["World War I","Name the three principal Central Powers.","Germany, Austria-Hungary, and the Ottoman Empire"],
+["World War I","What was the main battlefield in France and Belgium known as?","The Western Front"],
+["World War I","What type of warfare became synonymous with the Western Front?","Trench warfare"],
+["World War I","What was the territory between opposing trenches called?","No Man's Land"],
+["World War I","Which famous WWI battle became synonymous with extreme attrition and lasted most of 1916?","Battle of Verdun"],
+["World War I","Which WWI battle saw one of the first major uses of tanks?","Battle of the Somme"],
+["World War I","Who commanded the American Expeditionary Forces?","General John J. Pershing"],
+["World War I","Who was the famous German military commander associated with the final years of WWI?","Erich Ludendorff"],
+["World War I","Who was the prominent British commander on the Western Front?","Douglas Haig"],
+["World War I","What revolution caused Russia to withdraw from WWI?","The Russian Revolution"],
+["World War I","What treaty formally ended the war with Germany?","Treaty of Versailles"],
+["World War I","What were Woodrow Wilson's famous postwar peace proposals called?","Fourteen Points"],
+["World War I","What international organization did Wilson advocate creating after WWI?","League of Nations"],
+["World War I","What year did WWI end?","1918"],
+
+["World War II","What event triggered the European war in 1939?","Germany's invasion of Poland"],
+["World War II","Who was Germany's leader during WWII?","Adolf Hitler"],
+["World War II","Who was Britain's famous wartime prime minister?","Winston Churchill"],
+["World War II","Who led the Soviet Union?","Joseph Stalin"],
+["World War II","Who was U.S. president when WWII began?","Franklin D. Roosevelt"],
+["World War II","What event brought the United States directly into WWII?","Japanese attack on Pearl Harbor"],
+["World War II","What date was Pearl Harbor attacked?","December 7, 1941"],
+["World War II","What were the three principal Axis powers?","Germany, Italy, Japan"],
+["World War II","Who was Italy's fascist dictator?","Benito Mussolini"],
+["World War II","What was the Allied invasion of Normandy called?","D-Day / Operation Overlord"],
+["World War II","Who commanded the Allied invasion of Normandy?","Dwight D. Eisenhower"],
+["World War II","What date was D-Day?","June 6, 1944"],
+["World War II","What battle is generally considered the turning point of the Pacific War?","Battle of Midway"],
+["World War II","What battle is generally considered a major turning point on the Eastern Front?","Battle of Stalingrad"],
+["World War II","What was Germany's invasion of the Soviet Union called?","Operation Barbarossa"],
+["World War II","Who was the famous U.S. Army general known for aggressive armored warfare?","George S. Patton"],
+["World War II","Who commanded U.S. forces in the Pacific and famously vowed to return to the Philippines?","Douglas MacArthur"],
+["World War II","Who commanded the U.S. Pacific Fleet?","Chester W. Nimitz"],
+["World War II","Who was the famous Soviet marshal associated with the defeat of Nazi Germany?","Georgy Zhukov"],
+["World War II","What was the Holocaust?","The systematic persecution and murder of six million Jews by Nazi Germany and its collaborators, alongside millions of other victims"],
+["World War II","What Nazi concentration/extermination camp became the most infamous symbol of the Holocaust?","Auschwitz-Birkenau"],
+["World War II","Which two Japanese cities were hit by atomic bombs?","Hiroshima and Nagasaki"],
+["World War II","What were the two atomic bombs called?","Little Boy and Fat Man"],
+["World War II","Who was U.S. president when the atomic bombs were dropped?","Harry Truman"],
+["World War II","Who was president when WWII ended?","Harry Truman"],
+
+["US Presidents","Who was president during the Civil War?","Abraham Lincoln (1861–1865)"],
+["US Presidents","Who was president during WWI?","Woodrow Wilson (1913–1921)"],
+["US Presidents","Who was president when the Great Depression began?","Herbert Hoover (1929–1933)"],
+["US Presidents","Who was president during most of the Great Depression and WWII?","Franklin D. Roosevelt (1933–1945)"],
+["US Presidents","Who became president after FDR died?","Harry Truman (1945–1953)"],
+["US Presidents","Which WWII general became president in 1953?","Dwight D. Eisenhower"],
+["US Presidents","Who was president during the Cuban Missile Crisis?","John F. Kennedy"],
+["US Presidents","Who became president after JFK's assassination and championed the Great Society?","Lyndon B. Johnson"],
+["US Presidents","Who was president during Watergate and resigned?","Richard Nixon"],
+["US Presidents","Who became president when Nixon resigned?","Gerald Ford"],
+["US Presidents","Who was president during most of the 1980s?","Ronald Reagan"],
+["US Presidents","Who was president when the Berlin Wall fell?","George H.W. Bush"],
+["US Presidents","Who was president during the 1990s?","Bill Clinton"],
+["US Presidents","Who was president during 9/11?","George W. Bush"],
+["US Presidents","Who was the first Black U.S. president?","Barack Obama"],
+
+["Historical Documents & Court Cases","What 1215 document limited the English monarch's power and became a foundational symbol of rule of law?","Magna Carta"],
+["Historical Documents & Court Cases","What treaty ended the American Revolutionary War and recognized American independence?","Treaty of Paris (1783)"],
+["Historical Documents & Court Cases","What document preceded the U.S. Constitution and created a weak central government?","Articles of Confederation"],
+["Historical Documents & Court Cases","What Supreme Court case established judicial review?","Marbury v. Madison"],
+["Historical Documents & Court Cases","What Supreme Court case ruled that racial segregation in public schools was unconstitutional?","Brown v. Board of Education"],
+["Historical Documents & Court Cases","What earlier Supreme Court case established the \"separate but equal\" doctrine that Brown overturned?","Plessy v. Ferguson"],
+["Historical Documents & Court Cases","What Supreme Court case upheld internment of Japanese Americans during WWII?","Korematsu v. United States"],
+["Historical Documents & Court Cases","What Supreme Court case established that police must inform suspects of their rights?","Miranda v. Arizona"],
+["Historical Documents & Court Cases","What Supreme Court case established the constitutional right to an abortion?","Roe v. Wade"],
+["Historical Documents & Court Cases","What document formally ended the Civil War?","There wasn't a single formal treaty — Lee's surrender at Appomattox in 1865 is treated as the decisive conclusion"],
+["Historical Documents & Court Cases","What document declared enslaved people in Confederate-held territory free?","Emancipation Proclamation"],
+["Historical Documents & Court Cases","What famous 1963 speech was delivered by Martin Luther King Jr.?","\"I Have a Dream\""],
+
+["Landmarks","In which country is Petra located?","Jordan"],
+["Landmarks","In which city is Christ the Redeemer located?","Rio de Janeiro, Brazil"],
+["Landmarks","In which city is the Burj Khalifa, the world's tallest building, located?","Dubai, UAE"],
+["Landmarks","In which country is Machu Picchu located?","Peru"],
+["Landmarks","In which country is the Taj Mahal located?","India"],
+["Landmarks","In which country is Angkor Wat located?","Cambodia"],
+["Landmarks","In which city is the Hagia Sophia located?","Istanbul, Turkey"],
+["Landmarks","In which city is the Parthenon located?","Athens, Greece"],
+["Landmarks","Where are the Moai statues located?","Easter Island, Chile"],
+["Landmarks","In which country is Stonehenge located?","England"],
+["Landmarks","In which city is the Golden Gate Bridge located?","San Francisco"],
+["Landmarks","In which U.S. state is Mount Rushmore located?","South Dakota"],
+
+["Lakes","What are the five Great Lakes?","Superior, Michigan, Huron, Erie, Ontario"],
+["Lakes","What mnemonic gives you the Great Lakes?","HOMES"],
+["Lakes","Which Great Lake is the largest by surface area?","Lake Superior"],
+["Lakes","Which Great Lake is entirely within the United States?","Lake Michigan"],
+["Lakes","Which Great Lake borders Toronto?","Lake Ontario"],
+["Lakes","Which Great Lake borders Chicago?","Lake Michigan"],
+["Lakes","What is the world's largest lake by surface area?","Caspian Sea"],
+["Lakes","What is the world's deepest lake?","Lake Baikal"],
+["Lakes","What is Africa's largest lake by surface area?","Lake Victoria"],
+["Lakes","What is the world's second-deepest lake?","Lake Tanganyika"],
+
+["Parts of Earth","What are Earth's four major layers?","Crust, mantle, outer core, inner core"],
+["Parts of Earth","Which layer of the Earth is liquid?","Outer core"],
+["Parts of Earth","Which layer of the Earth is solid despite its extreme temperature?","Inner core"],
+["Parts of Earth","What two metals primarily make up Earth's core?","Iron and nickel"],
+["Parts of Earth","What boundary separates the crust from the mantle?","Mohorovičić discontinuity (the Moho)"],
+["Parts of Earth","What are Earth's rigid outer plates called collectively?","Lithosphere"],
+["Parts of Earth","What are the three major types of plate boundaries?","Divergent, convergent, transform"],
+["Parts of Earth","What is the deepest point on Earth?","Challenger Deep, in the Mariana Trench"],
+["Parts of Earth","What is the largest ocean?","Pacific Ocean"],
+["Parts of Earth","What is the longest mountain range on Earth?","The mid-ocean ridge system"],
+
+["Renewable Energy","What are the five major renewable energy sources?","Solar, wind, hydroelectric, geothermal, biomass"],
+["Renewable Energy","What does PV stand for?","Photovoltaic"],
+["Renewable Energy","What does a photovoltaic cell convert?","Sunlight into electricity"],
+["Renewable Energy","What is the major problem with solar and wind power?","Intermittency"],
+["Renewable Energy","What renewable energy source uses Earth's internal heat?","Geothermal"],
+["Renewable Energy","What renewable energy source uses moving water?","Hydroelectric"],
+["Renewable Energy","What renewable energy source uses organic material?","Biomass"],
+["Renewable Energy","What is offshore wind?","Wind turbines located in bodies of water"],
+["Renewable Energy","Is nuclear energy renewable?","No, although it is a low-carbon energy source"],
+["Renewable Energy","What greenhouse gas is most associated with fossil-fuel combustion?","Carbon dioxide (CO₂)"],
+
+["Generals","This French nobleman volunteered as a major general in the American Continental Army during the Revolutionary War, fighting alongside Washington. Who was he?","Marquis de Lafayette (1757–1834), France"],
+["Generals","Who commanded the Continental Army from 1775–1783 and became the first U.S. President?","George Washington (1732–1799), United States"],
+["Generals","Which American general won the Battle of New Orleans in 1815 and later became the 7th U.S. President?","Andrew Jackson (1767–1845), United States"],
+["Generals","Which Union general commanded all Union armies from 1864–1865 and later became president?","Ulysses S. Grant (1822–1885), United States"],
+["Generals","Which general commanded the Confederate Army of Northern Virginia (1861–1865) and surrendered at Appomattox Court House?","Robert E. Lee (1807–1870), United States (Confederacy)"],
+["Generals","Which American five-star general commanded Allied forces in the Pacific during WWII and UN forces in Korea (career c. 1917–1951)?","Douglas MacArthur (1880–1964), United States"],
+["Generals","Which Korean admiral is famed for his undefeated naval record against Japan during the Imjin War (1592–1598)?","Yi Sun-sin (1545–1598), Korea (Joseon Dynasty)"],
+["Generals","Which Byzantine general reconquered North Africa and Italy for Emperor Justinian I (c. 530–554)?","Belisarius (c. 505–565), Byzantine Empire"],
+["Generals","Who founded the Mongol Empire (r. 1206–1227), the largest contiguous land empire in history?","Genghis Khan (1162–1227), Mongolia"],
+["Generals","Which Macedonian king conquered the Persian Empire and built a vast empire by age 30 (r. 336–323 BC)?","Alexander the Great (356–323 BC), Macedon (Greece)"],
+["Generals","Which French general rose to Emperor (r. 1804–1815) and dominated European politics until his defeat at Waterloo?","Napoleon Bonaparte (1769–1821), France"],
+["Generals","Which Roman general's conquest of Gaul (58–50 BC) and crossing of the Rubicon triggered a civil war?","Julius Caesar (100–44 BC), Rome"],
+["Generals","Which Persian ruler founded the Achaemenid Empire (r. 559–530 BC) and freed the Jewish captives in Babylon?","Cyrus the Great (576–530 BC), Persia"],
+["Generals","Known as the \"Sword of Allah,\" which Arab commander (active 629–638 AD) never lost a battle in the early Muslim conquests?","Khalid ibn al-Walid (592–642 AD), Arabia"],
+["Generals","Which Ptolemaic queen of Egypt (r. 51–30 BC) allied with Caesar and Antony, commanding forces at the Battle of Actium?","Cleopatra (69–30 BC), Egypt (Ptolemaic Kingdom)"],
+
+["Civilizations","Which ancient civilization is known for philosophy, democracy, theater, and the Olympic Games?","Greeks"],
+["Civilizations","Which Mesoamerican civilization is known for advanced agriculture and human sacrifice rituals?","The Aztecs"],
+["Civilizations","Which civilization is known for roads, aqueducts, law, and a vast empire?","Romans"],
+["Civilizations","Which civilization is known for an advanced calendar, astronomy, and pyramid temples?","Maya"],
+["Civilizations","Which civilization built the pyramids and used hieroglyphic writing?","Egyptians"],
+["Civilizations","Which civilization, in modern Iraq, is considered one of the first — known for cuneiform writing?","Sumerians"],
+["Civilizations","Which civilization gave us paper, gunpowder, silk, and the compass?","Ancient China"],
+
+["Religious Texts","Which religious text is central to Christianity?","The Bible"],
+["Religious Texts","Which religious text is central to Islam?","The Quran"],
+["Religious Texts","Which religious text is central to Judaism?","The Torah"],
+["Religious Texts","Which religious text is central to Buddhism?","The Tripitaka"],
+["Religious Texts","Which religious texts are central to Hinduism?","The Vedas"],
+
+["Film Directors","Which director made The Dark Knight and Inception?","Christopher Nolan"],
+["Film Directors","Which director made Jurassic Park and Schindler's List?","Steven Spielberg"],
+["Film Directors","Which director made Pulp Fiction and Django Unchained?","Quentin Tarantino"],
+["Film Directors","Which Canadian director made Titanic and Avatar?","James Cameron"],
+["Film Directors","Which Swedish director made The Seventh Seal?","Ingmar Bergman"],
+["Film Directors","Which Russian director made Stalker and Andrei Rublev?","Andrei Tarkovsky"],
+["Film Directors","Which director made Arrival and Dune?","Denis Villeneuve"],
+["Film Directors","Which director made Goodfellas and Taxi Driver?","Martin Scorsese"],
+["Film Directors","Which director made Fight Club and The Social Network?","David Fincher"],
+["Film Directors","Which director made Edward Scissorhands and Beetlejuice?","Tim Burton"],
+["Film Directors","Which British director made Snatch and Lock, Stock and Two Smoking Barrels?","Guy Ritchie"],
+["Film Directors","Which New Zealand director made The Fellowship of the Ring?","Peter Jackson"],
+
+["Famous Painters","Who painted the Mona Lisa and The Last Supper?","Leonardo da Vinci"],
+["Famous Painters","Who painted The Starry Night?","Vincent van Gogh"],
+["Famous Painters","Who painted Guernica?","Pablo Picasso"],
+["Famous Painters","Who painted The Creation of Adam?","Michelangelo"],
+["Famous Painters","Who painted the Water Lilies series?","Claude Monet"],
+["Famous Painters","Who painted Girl with a Pearl Earring?","Johannes Vermeer"],
+["Famous Painters","Who painted The Persistence of Memory?","Salvador Dalí"],
+["Famous Painters","Who painted The Scream?","Edvard Munch"],
+["Famous Painters","Who painted The Two Fridas?","Frida Kahlo"],
+
+["Female CEOs","Who is the CEO of Ark Invest?","Cathie Wood"],
+["Female CEOs","Who is the CEO of GM?","Mary Barra"],
+["Female CEOs","Who is the first woman to lead a major Wall Street bank, as CEO of Citigroup?","Jane Fraser"],
+["Female CEOs","Who is the CEO of Advanced Micro Devices (AMD)?","Lisa Su"],
+
+["Trailblazing Women","Who was a key figure in the Underground Railroad?","Harriet Tubman"],
+["Trailblazing Women","Who sparked the Montgomery Bus Boycott?","Rosa Parks"],
+["Trailblazing Women","Who was the first woman and first Black U.S. Vice President?","Kamala Harris"],
+["Trailblazing Women","Who was the first Black First Lady of the United States?","Michelle Obama"],
+["Trailblazing Women","Who was the first Black woman in space?","Mae Jemison"],
+["Trailblazing Women","Who holds 23 Grand Slam singles titles in tennis?","Serena Williams"],
+["Trailblazing Women","Who was the first self-made female millionaire in America?","Madam C.J. Walker"],
+["Trailblazing Women","Who was a leading suffragist who fought for women's right to vote?","Susan B. Anthony"],
+["Trailblazing Women","Who was the first Black woman elected to the U.S. Congress and to run for president?","Shirley Chisholm"],
+["Trailblazing Women","Which abolitionist and women's rights activist is famous for her \"Ain't I a Woman?\" speech?","Sojourner Truth"],
+["Trailblazing Women","Which investigative journalist led the anti-lynching movement?","Ida B. Wells"],
+
+["Seas of the World","What is the largest sea in the world?","Philippine Sea"],
+["Seas of the World","What is the largest inland sea?","Caspian Sea"],
+["Seas of the World","Which sea lies between Europe and Africa?","Mediterranean Sea"],
+["Seas of the World","Which sea connects to the Gulf of Mexico?","Caribbean Sea"],
+["Seas of the World","Which sea lies in the western Pacific?","South China Sea"],
+["Seas of the World","Which sea lies between Europe and Asia, near Turkey?","Black Sea"],
+["Seas of the World","Which sea lies between Africa and Asia and is named for its color?","Red Sea"],
+["Seas of the World","Which sea is the saltiest and one of the lowest points on Earth?","Dead Sea"],
+
+["Zodiac Signs","Which zodiac sign's symbol is the Bull?","Taurus"],
+["Zodiac Signs","Which zodiac sign's symbol is the Crab?","Cancer"],
+["Zodiac Signs","Which zodiac sign's symbol is the Ram?","Aries"],
+["Zodiac Signs","Which zodiac sign's symbol is the Twins?","Gemini"],
+["Zodiac Signs","Which zodiac sign's symbol is the Lion?","Leo"],
+["Zodiac Signs","Which zodiac sign's symbol is the Virgin?","Virgo"],
+["Zodiac Signs","Which zodiac sign's symbol is the Scales?","Libra"],
+["Zodiac Signs","Which zodiac sign's symbol is the Scorpion?","Scorpio"],
+["Zodiac Signs","Which zodiac sign's symbol is the Archer?","Sagittarius"],
+["Zodiac Signs","Which zodiac sign's symbol is the Goat-fish?","Capricorn"],
+["Zodiac Signs","Which zodiac sign's symbol is the Water Bearer?","Aquarius"],
+["Zodiac Signs","Which zodiac sign's symbol is the Fish?","Pisces"],
+
+["Largest Islands","What is the world's largest island?","Greenland"],
+["Largest Islands","What is the largest tropical island, known for its biodiversity?","New Guinea"],
+["Largest Islands","Which island is famous for rainforest and orangutans?","Borneo"],
+["Largest Islands","Which island nation is known for lemurs and unique wildlife?","Madagascar"],
+["Largest Islands","Which Arctic Canadian island is known for glaciers and Inuit communities?","Baffin Island"],
+["Largest Islands","What is the largest island in Antarctica?","Alexander Island"],
+["Largest Islands","What is the largest island in South America?","Tierra del Fuego"],
+
+["Mountain Ranges","What is the tallest mountain range in the world?","Himalayas"],
+["Mountain Ranges","Which mountain range is the most traveled and famous in Europe?","Alps"],
+["Mountain Ranges","What is the longest mountain range in the US?","Rockies"],
+["Mountain Ranges","What is the longest mountain range in the world (South America)?","Andes"],
+["Mountain Ranges","Which range contains the second-tallest mountain, K2?","Karakoram"],
+["Mountain Ranges","Which mountain range is the most remote?","Antarctic Mountains"],
+
+["Famous Mountains","What is the tallest mountain above sea level?","Mount Everest"],
+["Famous Mountains","What is the second-tallest mountain in the world?","K2"],
+["Famous Mountains","What is the tallest mountain including its underwater base?","Mauna Kea"],
+["Famous Mountains","Which iconic mountain is located in Japan?","Mount Fuji"],
+["Famous Mountains","Which mountain is known for its near-perfect pyramid shape?","Matterhorn"],
+["Famous Mountains","What is the tallest mountain in the US?","Denali"],
+["Famous Mountains","Which dramatic spire mountain is in Patagonia?","Fitz Roy"],
+["Famous Mountains","What is the highest mountain in Africa?","Mount Kilimanjaro"],
+["Famous Mountains","Which Nepalese mountain is considered the deadliest to climb?","Annapurna"],
+
+["Record Labels","Which is the top highest-selling record label of all time?","Universal Music Group"],
+["Record Labels","Which major record label has the most Grammy wins?","Sony Music Entertainment"],
+["Record Labels","Name the third of the top three highest-selling record labels.","Warner Music Group"],
+
+["Film Studios","What is the parent company of Universal Pictures?","Comcast"],
+["Film Studios","What is the parent company of Warner Bros. Pictures?","Warner Bros. Discovery"],
+["Film Studios","What is the parent company of 20th Century Studios?","The Walt Disney Company"],
+["Film Studios","What is the parent company of Columbia Pictures?","Sony Group Corporation"],
+["Film Studios","What is the parent company of Paramount Pictures?","Paramount Global"],
+["Film Studios","What is the parent company of Walt Disney Studios?","The Walt Disney Company"],
+
+["History's Diseases","Which disease causes high fever and a blistering rash, and was eradicated by vaccination?","Smallpox"],
+["History's Diseases","Which plague spread via fleas living on rats?","Black Death (Bubonic Plague)"],
+["History's Diseases","Which disease is caused by bacteria that affect the lungs?","Tuberculosis"],
+["History's Diseases","Which disease spreads through the bite of an infected female mosquito?","Malaria"],
+["History's Diseases","Which 1918 pandemic came from an H1N1 virus that originated in birds?","Spanish Flu"],
+["History's Diseases","Which virus enters through the mouth and can cause paralysis?","Polio"],
+["History's Diseases","Which deadly virus is believed to originate from bats?","Ebola"],
+["History's Diseases","Which disease, spread by mosquitoes, shares its name with a color?","Yellow Fever"],
+["History's Diseases","Which virus is transmitted through specific bodily fluids and can lead to AIDS?","HIV"],
+
+["Top Writers","Who wrote Hamlet and Romeo and Juliet — the best-selling author of all time?","William Shakespeare"],
+["Top Writers","Who wrote Murder on the Orient Express — the best-selling female author of all time?","Agatha Christie"],
+["Top Writers","Who wrote Pride and Prejudice?","Jane Austen"],
+["Top Writers","Who wrote A Tale of Two Cities and Great Expectations?","Charles Dickens"],
+["Top Writers","Who wrote Adventures of Huckleberry Finn?","Mark Twain"],
+["Top Writers","Who wrote The Old Man and the Sea?","Ernest Hemingway"],
+["Top Writers","Who wrote 1984 and Animal Farm?","George Orwell"],
+["Top Writers","Who wrote Harry Potter and the Sorcerer's Stone?","J.K. Rowling"],
+["Top Writers","Who wrote The Shining and It?","Stephen King"],
+["Top Writers","Who wrote The Lord of the Rings and The Hobbit?","J.R.R. Tolkien"],
+["Top Writers","Who wrote Mrs Dalloway and To the Lighthouse?","Virginia Woolf"],
+["Top Writers","Who wrote Brave New World?","Aldous Huxley"],
+
+["Greek Gods","Who is the king of the Greek gods — god of sky, lightning, and justice?","Zeus"],
+["Greek Gods","Who is the queen of the gods — goddess of marriage and family?","Hera"],
+["Greek Gods","Who is the god of the sea, earthquakes, and horses?","Poseidon"],
+["Greek Gods","Who is the goddess of agriculture, harvest, and fertility?","Demeter"],
+["Greek Gods","Who is the goddess of wisdom, strategy, and warfare?","Athena"],
+["Greek Gods","Who is the god of light, music, prophecy, and healing?","Apollo"],
+["Greek Gods","Who is the goddess of the hunt and protector of young girls?","Artemis"],
+["Greek Gods","Who is the goddess of love, beauty, and desire?","Aphrodite"],
+["Greek Gods","Who is the god of war and violence?","Ares"],
+["Greek Gods","Who is the god of fire, metalworking, and craftsmanship?","Hephaestus"],
+["Greek Gods","Who is the messenger of the gods and god of trade and travel?","Hermes"],
+["Greek Gods","Who is the god of wine, celebration, and theater?","Dionysus"],
+
+["Famous Inventions","Who invented the printing press?","Johannes Gutenberg"],
+["Famous Inventions","Who invented the telephone?","Alexander Graham Bell"],
+["Famous Inventions","Who is credited with the practical light bulb?","Thomas Edison"],
+["Famous Inventions","Who achieved the first powered, controlled flight, in 1903?","The Wright Brothers"],
+["Famous Inventions","Who created the World Wide Web?","Tim Berners-Lee"],
+["Famous Inventions","Who invented the steam engine that powered the Industrial Revolution?","James Watt"],
+["Famous Inventions","Who developed the first fully electronic television system?","Philo Farnsworth"],
+
+["Major Empires","Which empire was one of the largest in ancient history, centered on the Mediterranean?","Roman Empire"],
+["Major Empires","Which was the largest contiguous land empire in history?","Mongol Empire"],
+["Major Empires","Which was the largest empire in history by territory?","British Empire"],
+["Major Empires","Which empire controlled Constantinople for centuries?","Ottoman Empire"],
+["Major Empires","Which was one of the earliest large world empires, in the Middle East?","Persian Empire"],
+["Major Empires","Which empire became a major colonial power after the Age of Exploration?","Spanish Empire"],
+["Major Empires","Which empire's dynasties shaped East Asian civilization for millennia?","Chinese Empire"],
+
+["Famous Explorers","Who reached the Americas in 1492?","Christopher Columbus"],
+["Famous Explorers","Who traveled the Silk Road to China and documented the journey?","Marco Polo"],
+["Famous Explorers","Who led the first circumnavigation of the Earth?","Ferdinand Magellan"],
+["Famous Explorers","Who found the first sea route from Europe to India?","Vasco da Gama"],
+["Famous Explorers","Which explorer charted Australia and Pacific islands?","James Cook"],
+["Famous Explorers","Who conquered the Aztec Empire in Mexico?","Hernán Cortés"],
+["Famous Explorers","Who conquered the Inca Empire in Peru?","Francisco Pizarro"],
+
+["Major Rivers","What is the longest river in the world?","Nile River"],
+["Major Rivers","What is the largest river by volume?","Amazon River"],
+["Major Rivers","What is the longest river in Asia?","Yangtze River"],
+["Major Rivers","Which major river runs through the central United States?","Mississippi River"],
+["Major Rivers","Which major European river flows through Central and Eastern Europe?","Danube River"],
+["Major Rivers","Which river is sacred in Hinduism?","Ganges River"],
+["Major Rivers","Which major Southeast Asian river runs from China to Vietnam?","Mekong River"],
+
+["Major Deserts","What is the largest hot desert in the world?","Sahara Desert"],
+["Major Deserts","Which desert covers most of the Arabian Peninsula?","Arabian Desert"],
+["Major Deserts","Which cold desert lies in northern China and Mongolia?","Gobi Desert"],
+["Major Deserts","Which semi-arid desert lies in southern Africa?","Kalahari Desert"],
+["Major Deserts","Which desert lies in California and Nevada?","Mojave Desert"],
+["Major Deserts","What is the driest nonpolar desert in the world?","Atacama Desert"],
+["Major Deserts","What is the largest desert overall?","Antarctic Desert"],
+
+["Famous Scientists","Who formulated the laws of motion and universal gravity?","Isaac Newton"],
+["Famous Scientists","Who developed the theory of relativity (E=mc²)?","Albert Einstein"],
+["Famous Scientists","Who improved the telescope and supported heliocentrism?","Galileo Galilei"],
+["Famous Scientists","Who proposed the theory of evolution by natural selection?","Charles Darwin"],
+["Famous Scientists","Who conducted pioneering research on radioactivity?","Marie Curie"],
+["Famous Scientists","Who developed alternating current (AC) electricity systems?","Nikola Tesla"],
+["Famous Scientists","Who developed germ theory and pasteurization?","Louis Pasteur"],
+["Famous Scientists","Who studied black holes and theoretical physics despite living with ALS?","Stephen Hawking"],
+
+["Physics","What force attracts objects with mass toward each other?","Gravity"],
+["Physics","What is the measure of disorder in a system, key to thermodynamics?","Entropy"],
+["Physics","What are the three laws describing motion and forces called?","Newton's Laws of Motion"],
+["Physics","What is the interaction between electricity and magnetic fields called?","Electromagnetism"],
+["Physics","What is the fastest known speed in the universe (≈300,000 km/s)?","Speed of Light"],
+["Physics","Which Einstein theory explains gravity, space, and time?","Relativity"],
+["Physics","Which branch of physics governs particle behavior at atomic scales?","Quantum Mechanics"],
+["Physics","What law states energy cannot be created or destroyed, only transformed?","Conservation of Energy"],
+["Physics","What is the product of mass and velocity, conserved in collisions?","Momentum"],
+["Physics","What force resists motion between two surfaces?","Friction"],
+["Physics","What describes light and matter behaving as both waves and particles?","Wave–Particle Duality"],
+["Physics","What is the splitting of atoms to release large amounts of energy called?","Nuclear Fission"],
+
+["Biology","What molecule carries genetic instructions in living organisms?","DNA"],
+["Biology","What is the change in species over time through natural selection called?","Evolution"],
+["Biology","What is Darwin's mechanism for evolution called?","Natural Selection"],
+["Biology","What theory states all living organisms are made of cells?","Cell Theory"],
+["Biology","What process do plants use to convert sunlight into chemical energy?","Photosynthesis"],
+["Biology","What process do cells use to convert glucose into usable energy (ATP)?","Cellular Respiration"],
+["Biology","What is a community of organisms interacting with their environment called?","Ecosystem"],
+["Biology","What is a change in a DNA sequence called?","Mutation"],
+["Biology","What is the body's defense system against pathogens and disease called?","Immune System"],
+["Biology","What structures contain DNA inside cells?","Chromosomes"],
+["Biology","What is cell division producing identical daughter cells called?","Mitosis"],
+["Biology","What term describes the variety of life in ecosystems or across Earth?","Biodiversity"],
+
+["Chemistry","What is the smallest unit of an element that retains its chemical properties?","Atom"],
+["Chemistry","What chart organizes elements by atomic number?","Periodic Table"],
+["Chemistry","What do we call two or more atoms chemically bonded together?","Molecule"],
+["Chemistry","What is the process where substances transform into new substances called?","Chemical Reaction"],
+["Chemistry","What scale measures acidity or alkalinity, from 0–14?","pH Scale"],
+["Chemistry","What kind of bond involves atoms sharing electrons?","Covalent Bond"],
+["Chemistry","What kind of bond forms from the transfer of electrons between atoms?","Ionic Bond"],
+["Chemistry","What substance speeds up a chemical reaction without being consumed?","Catalyst"],
+["Chemistry","What is the emission of energy from unstable atomic nuclei called?","Radioactivity"],
+["Chemistry","What is the number of particles in a mole (6.022×10²³) called?","Avogadro's Number"],
+["Chemistry","What is the loss of electrons in a chemical reaction called?","Oxidation"],
+["Chemistry","What law states element properties repeat periodically by atomic number?","Periodic Law"],
+
+["Astronomy","What theory describes the origin of the universe?","Big Bang"],
+["Astronomy","What region of space has gravity so strong that light cannot escape?","Black Hole"],
+["Astronomy","What is the distance light travels in one year called?","Light Year"],
+["Astronomy","What is the explosive death of a massive star called?","Supernova"],
+["Astronomy","What is a massive system of stars, gas, and dark matter called?","Galaxy"],
+["Astronomy","What galaxy contains our solar system?","Milky Way"],
+["Astronomy","What is light being stretched as objects move away — evidence for universal expansion — called?","Red Shift"],
+["Astronomy","What is a planet orbiting a star outside our solar system called?","Exoplanet"],
+["Astronomy","What is a large cloud of gas and dust in space called?","Nebula"],
+["Astronomy","What is a rapidly spinning neutron star that emits radiation beams called?","Pulsar"],
+["Astronomy","What invisible matter influences galaxy motion?","Dark Matter"],
+["Astronomy","What is the boundary around a black hole where escape becomes impossible called?","Event Horizon"],
+
+["Scientific Discoveries","Who explained gravitational attraction between objects?","Isaac Newton"],
+["Scientific Discoveries","Whose theory redefined space, time, and gravity?","Albert Einstein"],
+["Scientific Discoveries","Who explained biological evolution by natural selection?","Charles Darwin"],
+["Scientific Discoveries","Who showed that microbes cause disease (germ theory)?","Louis Pasteur"],
+["Scientific Discoveries","Who discovered the first antibiotic, penicillin?","Alexander Fleming"],
+["Scientific Discoveries","Who discovered the double helix structure of DNA?","Watson and Crick"],
+["Scientific Discoveries","Who proposed that Earth orbits the Sun (heliocentrism)?","Copernicus"],
+["Scientific Discoveries","Who established the principles governing motion and force?","Newton's Laws of Motion"],
+["Scientific Discoveries","Whose research uncovered radioactive elements?","Marie Curie"],
+["Scientific Discoveries","Who conducted famous experiments with electrical charge?","Benjamin Franklin"],
+["Scientific Discoveries","Who organized the chemical elements into the periodic table?","Dmitri Mendeleev"],
+["Scientific Discoveries","Who developed the first smallpox vaccine?","Edward Jenner"],
+
+["Laws & Equations","What equation expresses mass–energy equivalence from relativity?","E = mc²"],
+["Laws & Equations","What law states gravity attracts objects with mass?","Newton's Law of Universal Gravitation"],
+["Laws & Equations","What is the Law of Inertia also known as?","Newton's First Law"],
+["Laws & Equations","What equation states force equals mass times acceleration?","F = ma (Newton's Second Law)"],
+["Laws & Equations","What law states every action has an equal and opposite reaction?","Newton's Third Law"],
+["Laws & Equations","What law relates voltage, current, and resistance as V = IR?","Ohm's Law"],
+["Laws & Equations","What law states gas pressure is inversely proportional to volume?","Boyle's Law"],
+["Laws & Equations","What law states gas volume increases with temperature?","Charles's Law"],
+["Laws & Equations","What equation relates pressure, volume, temperature, and gas quantity — PV = nRT?","Ideal Gas Law"],
+["Laws & Equations","What fundamental laws govern energy and heat transfer?","Laws of Thermodynamics"],
+["Laws & Equations","What law states energy cannot be created or destroyed?","Conservation of Energy"],
+["Laws & Equations","What quantum mechanics equation describes particle behavior?","Schrödinger Equation"],
+["Laws & Equations","What law describes the electric force between charged particles?","Coulomb's Law"],
+["Laws & Equations","What laws describe planets orbiting the Sun in elliptical paths?","Kepler's Laws of Planetary Motion"],
+["Laws & Equations","What law states galaxies move away faster as their distance increases?","Hubble's Law"],
+
+["World Capitals","What is the capital of Italy?","Rome"],
+["World Capitals","What is the capital of Germany?","Berlin"],
+["World Capitals","What is the capital of Spain?","Madrid"],
+["World Capitals","What is the capital of China?","Beijing"],
+["World Capitals","What is the capital of Japan?","Tokyo"],
+["World Capitals","What is the capital of South Korea?","Seoul"],
+["World Capitals","What is the capital of India?","New Delhi"],
+["World Capitals","What is the capital of Egypt?","Cairo"],
+["World Capitals","What is the capital of Turkey?","Ankara"],
+["World Capitals","What is the capital of Australia?","Canberra"],
+["World Capitals","What is the capital of Canada?","Ottawa"],
+["World Capitals","What is the capital of Brazil?","Brasília"],
+["World Capitals","What is the capital of Mexico?","Mexico City"],
+["World Capitals","What is the capital of Argentina?","Buenos Aires"],
+["World Capitals","What is the capital of South Africa (administrative)?","Pretoria"],
+["World Capitals","What is the capital of Thailand?","Bangkok"]
+];
+
+const QUESTIONS = RAW.map((r,i)=>({id:i, cat:r[0], q:r[1], a:r[2]}));
+const CATEGORIES = [...new Set(QUESTIONS.map(q=>q.cat))];
+const PALETTE = ["#e8a33d","#4fb286","#c15b5b","#6c8fc7","#b98bd1","#d4c05e","#5fafaf","#d17a9e","#8fa85e","#c98a4b","#7ea0e0","#e0a8c8"];
+const catColor = {};
+CATEGORIES.forEach((c,i)=>catColor[c]=PALETTE[i%PALETTE.length]);
+
+/* ===================== STATE ===================== */
+let state = {
+  screen:'start',        // start | quiz | end
+  selectedCats: new Set(CATEGORIES),
+  count: 20,
+  timerDur: 15,           // seconds, 0 = off
+  session: [],
+  idx: 0,
+  phase: 'q',             // q | a
+  remaining: 0,
+  paused: false,
+  timerId: null,
+  stats: {},              // cat -> {correct,total}
+  scoreCorrect: 0,
+  scoreSeen: 0,
+  missedIds: new Set()
+};
+
+const el = document.getElementById('content');
+const filmstripEl = document.getElementById('filmstrip');
+
+function setAccent(color){
+  document.documentElement.style.setProperty('--accent', color);
+}
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+/* ===================== RENDER: START ===================== */
+function renderStart(){
+  setAccent(PALETTE[0]);
+  const maxCount = QUESTIONS.length;
+  el.innerHTML = `
+    <div class="eyebrow">History, Earth Science &amp; Global Literacy</div>
+    <h1>Watch, Guess, Learn</h1>
+    <div class="sub">A question appears on screen with a countdown. Answer it in your head before time runs out — pause anytime if you need more room to think — then reveal the answer and grade yourself.</div>
+
+    <div class="field">
+      <label>Categories</label>
+      <div class="chiprow" id="catChips"></div>
+      <div class="rowbtns">
+        <button class="smallbtn" id="allBtn">Select all</button>
+        <button class="smallbtn" id="noneBtn">Clear</button>
+      </div>
+    </div>
+
+    <div class="field" style="display:flex; gap:28px; flex-wrap:wrap;">
+      <div>
+        <label>Questions this round</label>
+        <select id="countSel"></select>
+      </div>
+      <div>
+        <label>Timer per question</label>
+        <select id="timerSel">
+          <option value="10">10 seconds</option>
+          <option value="15" selected>15 seconds</option>
+          <option value="20">20 seconds</option>
+          <option value="0">No timer</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="primary" id="startBtn">Start Quiz</button>
+  `;
+
+  const chipWrap = document.getElementById('catChips');
+  CATEGORIES.forEach(cat=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip on';
+    chip.textContent = cat;
+    chip.style.setProperty('--accent', catColor[cat]);
+    chip.onclick = ()=>{
+      if(state.selectedCats.has(cat)){ state.selectedCats.delete(cat); chip.classList.remove('on'); }
+      else { state.selectedCats.add(cat); chip.classList.add('on'); }
+      refreshCountOptions();
+    };
+    chipWrap.appendChild(chip);
+  });
+
+  document.getElementById('allBtn').onclick = ()=>{
+    state.selectedCats = new Set(CATEGORIES);
+    renderStart();
+  };
+  document.getElementById('noneBtn').onclick = ()=>{
+    state.selectedCats = new Set();
+    renderStart();
+  };
+
+  const countSel = document.getElementById('countSel');
+  function refreshCountOptions(){
+    const avail = QUESTIONS.filter(q=>state.selectedCats.has(q.cat)).length;
+    const options = [10,15,20,30,40,avail].filter((v,i,a)=>v>0 && v<=avail && a.indexOf(v)===i);
+    countSel.innerHTML = options.map(v=>`<option value="${v}">${v===avail? 'All ('+avail+')' : v}</option>`).join('');
+    if(!options.includes(state.count)) state.count = options[Math.min(1,options.length-1)] || avail;
+    countSel.value = state.count;
+    document.getElementById('startBtn').disabled = avail === 0;
+  }
+  refreshCountOptions();
+  countSel.onchange = ()=> state.count = parseInt(countSel.value,10);
+
+  const timerSel = document.getElementById('timerSel');
+  timerSel.value = String(state.timerDur);
+  timerSel.onchange = ()=> state.timerDur = parseInt(timerSel.value,10);
+
+  document.getElementById('startBtn').onclick = startQuiz;
+}
+
+/* ===================== QUIZ LOGIC ===================== */
+function startQuiz(){
+  const pool = QUESTIONS.filter(q=>state.selectedCats.has(q.cat));
+  state.session = shuffle(pool).slice(0, state.count);
+  state.idx = 0;
+  state.phase = 'q';
+  state.paused = false;
+  state.stats = {};
+  state.scoreCorrect = 0;
+  state.scoreSeen = 0;
+  state.missedIds = new Set();
+  state.screen = 'quiz';
+  renderQuiz();
+}
+
+function currentQ(){ return state.session[state.idx]; }
+
+function clearTimer(){
+  if(state.timerId){ clearInterval(state.timerId); state.timerId = null; }
+}
+
+function startTimer(){
+  clearTimer();
+  if(state.timerDur <= 0) return;
+  state.remaining = state.timerDur;
+  updateTimerUI();
+  state.timerId = setInterval(()=>{
+    if(state.paused) return;
+    state.remaining -= 1;
+    updateTimerUI();
+    if(state.remaining <= 0){
+      clearTimer();
+      revealAnswer();
+    }
+  },1000);
+}
+
+function updateTimerUI(){
+  const numEl = document.getElementById('timernum');
+  const progEl = document.getElementById('ringprog');
+  if(!numEl) return;
+  numEl.textContent = state.remaining;
+  const total = state.timerDur;
+  const circumference = 2*Math.PI*11;
+  const pct = Math.max(0, state.remaining/total);
+  progEl.style.strokeDasharray = circumference;
+  progEl.style.strokeDashoffset = circumference * (1-pct);
+}
+
+function renderQuiz(){
+  const item = currentQ();
+  const color = catColor[item.cat];
+  setAccent(color);
+  const n = state.idx+1, total = state.session.length;
+
+  const timerHTML = state.timerDur>0 ? `
+    <div class="timerwrap">
+      <div class="ring">
+        <svg width="28" height="28" viewBox="0 0 28 28">
+          <circle class="track" cx="14" cy="14" r="11"></circle>
+          <circle class="prog" id="ringprog" cx="14" cy="14" r="11"></circle>
+        </svg>
+      </div>
+      <div class="timernum" id="timernum">${state.timerDur}</div>
+    </div>` : `<div class="count">no timer</div>`;
+
+  if(state.phase === 'q'){
+    el.innerHTML = `
+      <div class="qbar">
+        <div class="catlabel">${item.cat}</div>
+        <div class="meta">
+          <div class="count">${n} / ${total}</div>
+          ${timerHTML}
+          <button class="iconbtn" id="pauseBtn" title="Pause">⏸</button>
+        </div>
+      </div>
+      <div class="badgewrap"><div class="badge">Q</div></div>
+      <div class="qtext">${item.q}</div>
+      <div class="footer">
+        <div class="hint">Press space or click to reveal</div>
+        <button class="primary" id="revealBtn">Reveal Answer</button>
+      </div>
+    `;
+    document.getElementById('revealBtn').onclick = revealAnswer;
+    document.getElementById('pauseBtn').onclick = togglePause;
+    startTimer();
+  } else {
+    clearTimer();
+    el.innerHTML = `
+      <div class="qbar">
+        <div class="catlabel">${item.cat}</div>
+        <div class="meta">
+          <div class="count">${n} / ${total}</div>
+        </div>
+      </div>
+      <div class="badgewrap">
+        <div class="badge">A</div>
+        <div class="fadedq">${item.q}</div>
+      </div>
+      <div class="atext">${item.a}</div>
+      <div class="footer">
+        <div class="hint">How'd you do?</div>
+        <div class="gradebtns">
+          <button class="gradebtn miss" id="missBtn">✕ Missed it</button>
+          <button class="gradebtn got" id="gotBtn">✓ Got it</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('missBtn').onclick = ()=>grade(false);
+    document.getElementById('gotBtn').onclick = ()=>grade(true);
+  }
+}
+
+function revealAnswer(){
+  clearTimer();
+  state.phase = 'a';
+  renderQuiz();
+}
+
+function grade(correct){
+  const item = currentQ();
+  if(!state.stats[item.cat]) state.stats[item.cat] = {correct:0,total:0};
+  state.stats[item.cat].total += 1;
+  if(correct){ state.stats[item.cat].correct += 1; }
+  else { state.missedIds.add(item.id); }
+  state.scoreSeen += 1;
+  if(correct) state.scoreCorrect += 1;
+
+  if(state.idx+1 >= state.session.length){
+    state.screen = 'end';
+    renderEnd();
+  } else {
+    state.idx += 1;
+    state.phase = 'q';
+    renderQuiz();
+  }
+}
+
+function togglePause(){
+  state.paused = !state.paused;
+  if(state.paused){
+    const overlay = document.createElement('div');
+    overlay.className = 'pauseOverlay';
+    overlay.id = 'pauseOverlay';
+    overlay.innerHTML = `<h2>Paused</h2><button class="primary" id="resumeBtn">Resume</button>`;
+    document.querySelector('.card').appendChild(overlay);
+    document.getElementById('resumeBtn').onclick = togglePause;
+  } else {
+    const o = document.getElementById('pauseOverlay');
+    if(o) o.remove();
+  }
+}
+
+/* ===================== END SCREEN ===================== */
+function renderEnd(){
+  clearTimer();
+  setAccent(PALETTE[1]);
+  const pct = state.scoreSeen ? Math.round(100*state.scoreCorrect/state.scoreSeen) : 0;
+  const rows = Object.keys(state.stats).sort().map(cat=>{
+    const s = state.stats[cat];
+    return `<div class="brow"><div class="cn" style="color:${catColor[cat]}">${cat}</div><div class="cs">${s.correct} / ${s.total}</div></div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="eyebrow">Round complete</div>
+    <h1>Nice work.</h1>
+    <div class="scoreBig">${state.scoreCorrect} / ${state.scoreSeen}</div>
+    <div class="sub">${pct}% self-graded correct</div>
+    <div class="breakdown">${rows}</div>
+    <div class="actions">
+      <button class="primary" id="retryBtn">Retry Same Set</button>
+      <button class="ghost" id="missedBtn" ${state.missedIds.size===0 ? 'disabled':''}>Retry Missed Only (${state.missedIds.size})</button>
+      <button class="ghost" id="newBtn">New Session</button>
+    </div>
+  `;
+
+  document.getElementById('retryBtn').onclick = ()=>{
+    state.idx=0; state.phase='q'; state.paused=false; state.stats={}; state.scoreCorrect=0; state.scoreSeen=0; state.missedIds=new Set();
+    state.session = shuffle(state.session);
+    state.screen='quiz'; renderQuiz();
+  };
+  document.getElementById('newBtn').onclick = ()=>{ state.screen='start'; renderStart(); };
+  const missedBtn = document.getElementById('missedBtn');
+  if(missedBtn && !missedBtn.disabled){
+    missedBtn.onclick = ()=>{
+      state.session = shuffle(QUESTIONS.filter(q=>state.missedIds.has(q.id)));
+      state.idx=0; state.phase='q'; state.paused=false; state.stats={}; state.scoreCorrect=0; state.scoreSeen=0; state.missedIds=new Set();
+      state.screen='quiz'; renderQuiz();
+    };
+  }
+}
+
+/* ===================== KEYBOARD ===================== */
+document.addEventListener('keydown', (e)=>{
+  if(state.screen !== 'quiz') return;
+  if(e.code === 'Space'){
+    e.preventDefault();
+    if(state.phase==='q') revealAnswer();
+  }
+  if(e.key==='p' || e.key==='P'){
+    togglePause();
+  }
+});
+
+/* ===================== INIT ===================== */
+renderStart();
+</script>
+</body>
+</html>
