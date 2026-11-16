@@ -58,6 +58,13 @@ h2{font-family:Fraunces,Georgia,serif;font-size:19px;font-weight:600;margin:28px
 .around-btn{width:100%;border:1px dashed var(--muted);background:transparent;color:var(--ink);border-radius:14px;padding:11px;font:500 14px Inter,sans-serif;cursor:pointer;margin-bottom:12px}
 .around{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px 14px;margin-bottom:12px}
 .around .grp:first-of-type{margin-top:4px}
+.form{display:grid;gap:10px}
+.form label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.form select,.form input{font:15px Inter,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;-webkit-appearance:none;appearance:none}
+.colrow{display:flex;gap:8px;align-items:center}
+.dot.big{width:34px;height:34px;flex:none;border-radius:50%;border:1px solid rgba(128,128,128,.3)}
+.it .x{margin-left:2px;color:var(--muted);font-weight:600}
+.it.removed{opacity:.5}
 .foot{color:var(--muted);font-size:12px;margin-top:24px}
 </style>
 </head>
@@ -85,8 +92,21 @@ h2{font-family:Fraunces,Georgia,serif;font-size:19px;font-weight:600;margin:28px
   <div id="hist"></div>
 
   <h2>Wardrobe</h2>
-  <p class="hint">Tap anything that's in the wash or at the cleaner to skip it. Tap it again to bring it back.</p>
+  <p class="hint" id="wardHint"></p>
+  <div class="chips"><button class="chip" id="editToggle">Edit wardrobe</button></div>
+  <div class="around" id="addPanel" hidden>
+    <div class="grp" style="margin-top:0">Add an item</div>
+    <div class="form">
+      <label>Type<select id="fCat"></select></label>
+      <label id="fKindWrap">Style<select id="fKind"></select></label>
+      <label>Name<input id="fName" placeholder="e.g. Olive chinos" maxlength="60"></label>
+      <label>Color<div class="colrow"><span class="dot big" id="fSw"></span><select id="fColor"></select></div></label>
+      <label>How often<select id="fW"><option value="1.6">Go-to piece</option><option value="1" selected>Normal</option><option value="0.5">Rarely</option></select></label>
+    </div>
+    <button class="btn primary" id="fAdd" style="width:100%;margin-top:10px">Add to wardrobe</button>
+  </div>
   <div id="wardrobe"></div>
+  <div id="editExtras"></div>
 
   <div class="foot">Wardrobe and matching rules live in the page's code. Ask Claude to add, remove or change anything.</div>
 </div>
@@ -109,7 +129,8 @@ const COLORS = {
   pink:'#f1b5c4', maroon:'#6a1e2a', grey:'#9b9b9b', greybrown:'#8a8274', black:'#1b1b1b', navy:'#1f2a44',
   green:'#2f4b38', brown:'#6b4a32', khaki:'#c2ae8c', beige:'#d8c6a4',
   burgundy:'#7a1f2e', silver:'#c4c7cc', charcoal:'#4a4a4a', gold:'#c9a13b', red:'#b3262e', orange:'#d9762b',
-  purple:'#5c3d7a', lightblue:'#9cc7e8', forest:'#2c4a33', olive:'#6b6b3a', steel:'#b9bec4'
+  purple:'#5c3d7a', lightblue:'#9cc7e8', forest:'#2c4a33', olive:'#6b6b3a', steel:'#b9bec4',
+  tan:'#b48a5a', camel:'#c19a6b', mint:'#b8e0cc', yellow:'#ecd77a', teal:'#2f6f73'
 };
 
 const WARDROBE = {
@@ -237,6 +258,13 @@ let st = {mode:'bc', outer:false, tie:false, separates:true, out:[], hist:[]};
 try { const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s) st=Object.assign(st,s); } catch(e){}
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(st)); }catch(e){} }
 
+const BASE = JSON.parse(JSON.stringify(WARDROBE));
+st.custom = st.custom || []; st.removed = st.removed || [];
+function applyEdits(){
+  for (const k in BASE) WARDROBE[k] = BASE[k].filter(i=>!st.removed.includes(i.id)).concat(st.custom.filter(c=>c.cat===k));
+}
+applyEdits();
+
 let fit=null, locks={}, prev=[];
 
 function slots(){
@@ -270,6 +298,12 @@ function pick(arr, slot, recent){
   let r = Math.random()*tot; for (let i=0;i<arr.length;i++){ r-=ws[i]; if(r<=0) return arr[i]; } return arr[arr.length-1];
 }
 
+function shoeFit(table, bottom, shoe){
+  const row = table[bottom];
+  if (row && shoe in row) return row[shoe];
+  const ref = shoe==='black' ? 'black' : 'brown';           // new shoe colors act like brown, new pants like navy
+  return (row || table.navy)[ref] * (shoe==='black'||shoe==='brown' ? 1 : .9);
+}
 function score(f){
   let s=1; const Sh=f.shoes, S=f.shirt;
   if (st.mode==='bc'){
@@ -278,7 +312,7 @@ function score(f){
     if (K) s *= pair(K.color,S.color,0) * pair(K.color,P.color,sameLayerPant(K.color));
     if (L){
       if (L.kind==='blazer'){
-        s *= (L.pants[P.color] ?? 0) * pair(L.color,S.color,0);
+        s *= (L.pants ? (L.pants[P.color] ?? 0) : .9*pair(L.color,P.color,0)) * pair(L.color,S.color,0);
         if (K) s *= (K.kind==='sweater' ? .6 : .25) * pair(L.color,K.color,0);
         if (L.color==='beige' && Sh.color==='black') s *= .2;
       } else {
@@ -287,16 +321,17 @@ function score(f){
         else s *= pair(L.color,S.color,0);
       }
     }
-    s *= SHOE_PANT[P.color][Sh.color];
+    s *= shoeFit(SHOE_PANT, P.color, Sh.color);
     if (f.tie){
       s *= tieShirt(f.tie,S) * (K && K.kind==='qz' ? .4 : 1);
       if (L && L.kind==='blazer') s *= tieSuit(f.tie,L.color);
     }
   } else {
     const U=f.suit;
-    s *= pair(S.color,U.color,.1) * SHOE_SUIT[U.color][Sh.color] * tieShirt(f.tie,S) * tieSuit(f.tie,U.color);
+    s *= pair(S.color,U.color,.1) * shoeFit(SHOE_SUIT, U.color, Sh.color) * tieShirt(f.tie,S) * tieSuit(f.tie,U.color);
   }
-  if (f.watch.strap==='brown' && Sh.color!=='brown') s=0;
+  if (f.watch.strap==='brown' && Sh.color==='black') s=0;
+  if (f.watch.strap==='black' && Sh.color!=='black') s=0;
   if (f.outer){
     const O=f.outer, L=real(f.layer);
     const under = st.mode==='suit' ? f.suit : (L || real(f.knit) || S);
@@ -391,12 +426,56 @@ function renderHist(){
   }).join('')+'</div><button class="link" id="clearHist">Clear history</button>';
   document.getElementById('clearHist').onclick=()=>{ st.hist=[]; save(); render(); };
 }
+let editing=false;
+const CAT_LABEL = {shirts:'Shirt',knits:'Sweater / quarter-zip',layers:'Vest / blazer',pants:'Pants',suits:'Suit',outer:'Outerwear',shoes:'Shoes',watches:'Watch'};
+const KINDS = {knits:[['sweater','Sweater'],['qz','Quarter-zip']],
+               layers:[['gilet','Puffer / quilted vest'],['waistcoat','Suit-style vest'],['blazer','Blazer / sport coat']],
+               outer:[['jacket','Jacket'],['overcoat','Overcoat'],['trench','Trench / raincoat']],
+               watches:[['steel','Metal bracelet'],['brown','Brown leather strap'],['black','Black leather strap']]};
+const MUST_KEEP = ['shirts','pants','shoes','watches','suits'];
+const colorName = c => ({cottoncandy:'Cotton candy blue',powderblue:'Powder blue',skyblue:'Sky blue',lightblue:'Light blue',greybrown:'Grey-brown'}[c] || cap(c));
+const WARD_GROUPS=[['Shirts','shirts'],['Knits & quarter-zips','knits'],['Vests & blazers','layers'],['Pants','pants'],['Suits','suits'],['Outerwear','outer'],['Shoes','shoes'],['Watches','watches']];
+
 function renderWardrobe(){
-  const groups=[['Shirts','shirts'],['Knits & quarter-zips','knits'],['Vests & blazers','layers'],['Pants','pants'],['Suits','suits'],['Outerwear','outer']];
+  document.getElementById('wardHint').textContent = editing
+    ? 'Tap the × on anything you got rid of. Add new pieces with the form.'
+    : 'Tap anything that’s in the wash or at the cleaner to skip it. Tap it again to bring it back.';
+  document.getElementById('editToggle').classList.toggle('on',editing);
+  document.getElementById('editToggle').textContent = editing ? 'Done editing' : 'Edit wardrobe';
+  document.getElementById('addPanel').hidden = !editing;
+  const groups = editing ? WARD_GROUPS : WARD_GROUPS.filter(g=>!['shoes','watches'].includes(g[1]));
   document.getElementById('wardrobe').innerHTML = groups.map(([t,k])=>
     `<div class="grp">${t}</div><div class="items">`+
-    WARDROBE[k].map(i=>`<button class="it ${st.out.includes(i.id)?'out':''}" data-out="${i.id}"><span class="dot" style="background:${COLORS[i.color]}"></span>${i.name.replace(' (as a blazer)','')}</button>`).join('')+
+    WARDROBE[k].map(i=>`<button class="it ${!editing&&st.out.includes(i.id)?'out':''}" data-${editing?'del':'out'}="${i.id}" data-cat="${k}"><span class="dot" style="background:${COLORS[i.color]||'#999'}"></span>${i.name.replace(' (as a blazer)','')}${editing?'<span class="x">×</span>':''}</button>`).join('')+
     '</div>').join('');
+  let ex='';
+  if (editing){
+    const removed = [];
+    for (const k in BASE) BASE[k].forEach(i=>{ if(st.removed.includes(i.id)) removed.push(i); });
+    if (removed.length) ex += `<div class="grp">Removed (tap to bring back)</div><div class="items">`+
+      removed.map(i=>`<button class="it removed" data-restore="${i.id}"><span class="dot" style="background:${COLORS[i.color]}"></span>${i.name.replace(' (as a blazer)','')}</button>`).join('')+'</div>';
+    if (st.custom.length || st.removed.length)
+      ex += `<div style="margin-top:14px;display:flex;gap:14px;flex-wrap:wrap"><button class="link" id="copyEdits">Copy my changes for Claude</button><button class="link" id="resetEdits">Undo all my changes</button></div>`;
+  }
+  document.getElementById('editExtras').innerHTML = ex;
+}
+function fillForm(){
+  const cat=document.getElementById('fCat');
+  if (!cat.options.length) cat.innerHTML = Object.entries(CAT_LABEL).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+  const k=cat.value, kinds=KINDS[k];
+  document.getElementById('fKindWrap').style.display = kinds ? '' : 'none';
+  if (kinds) document.getElementById('fKind').innerHTML = kinds.map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+  const col=document.getElementById('fColor');
+  if (!col.options.length){
+    const skip=['steel','burgundy','silver','gold','red','orange','purple','forest','lightblue','greybrown'];
+    col.innerHTML = Object.keys(COLORS).filter(c=>!skip.includes(c)).map(c=>`<option value="${c}">${colorName(c)}</option>`).join('')
+      + '<option disabled>──────────</option>' + skip.filter(c=>c!=='steel').map(c=>`<option value="${c}">${colorName(c)}</option>`).join('');
+  }
+  document.getElementById('fSw').style.background = COLORS[col.value];
+}
+function afterEdit(){
+  applyEdits(); save(); locks={}; prev=[];
+  fit = generate(null,{}); render();
 }
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),2200); }
 
@@ -417,9 +496,36 @@ document.getElementById('fit').onclick=e=>{
   if (b.dataset.lock){ locks[b.dataset.lock]=!locks[b.dataset.lock]; render(); }
   if (b.dataset.roll){ rerollSlot(b.dataset.roll); }
 };
+document.getElementById('editToggle').onclick=()=>{ editing=!editing; if(editing) fillForm(); renderWardrobe(); };
+document.getElementById('fCat').onchange=fillForm;
+document.getElementById('fColor').onchange=fillForm;
+document.getElementById('fAdd').onclick=()=>{
+  const cat=document.getElementById('fCat').value, color=document.getElementById('fColor').value;
+  let name=document.getElementById('fName').value.trim();
+  if (!name) name = colorName(color)+' '+CAT_LABEL[cat].toLowerCase();
+  const it={id:'my-'+Date.now().toString(36), cat, name, color, w:parseFloat(document.getElementById('fW').value)};
+  if (KINDS[cat]){ const v=document.getElementById('fKind').value; if(cat==='watches') it.strap=v; else it.kind=v; }
+  st.custom.push(it); document.getElementById('fName').value='';
+  afterEdit(); toast('Added '+name+'.');
+};
+document.getElementById('editExtras').onclick=e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  if (b.dataset.restore){ st.removed=st.removed.filter(x=>x!==b.dataset.restore); afterEdit(); }
+  if (b.id==='resetEdits'){ st.custom=[]; st.removed=[]; afterEdit(); toast('Back to the original wardrobe.'); }
+  if (b.id==='copyEdits'){
+    const txt='Fit Generator changes:\n'+JSON.stringify({added:st.custom,removed:st.removed});
+    try{ navigator.clipboard.writeText(txt).then(()=>toast('Copied. Paste it to Claude.'),()=>toast('Couldn’t copy on this device.')); }catch(err){ toast('Couldn’t copy on this device.'); }
+  }
+};
 document.getElementById('wardrobe').onclick=e=>{
   const b=e.target.closest('button'); if(!b) return;
-  const id=b.dataset.out; st.out = st.out.includes(id) ? st.out.filter(x=>x!==id) : st.out.concat(id); save();
+  if (b.dataset.del){
+    const id=b.dataset.del, cat=b.dataset.cat;
+    if (MUST_KEEP.includes(cat) && WARDROBE[cat].length<=1){ toast('You need at least one item here.'); return; }
+    if (st.custom.some(c=>c.id===id)) st.custom=st.custom.filter(c=>c.id!==id); else st.removed.push(id);
+    afterEdit(); return;
+  }
+  const id=b.dataset.out; if(!id) return; st.out = st.out.includes(id) ? st.out.filter(x=>x!==id) : st.out.concat(id); save();
   const sl=slots(); if (sl.some(s=>fit[s]&&fit[s].id===id) && st.out.includes(id)){ sl.forEach(s=>{ if(fit[s]&&fit[s].id===id){ delete fit[s]; locks[s]=false; } }); fillSlotsQuietly(); }
   render();
 };
